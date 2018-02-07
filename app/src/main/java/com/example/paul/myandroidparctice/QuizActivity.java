@@ -1,7 +1,7 @@
 package com.example.paul.myandroidparctice;
 
-import android.os.MessageQueue;
-import android.security.keystore.KeyInfo;
+import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,13 +13,16 @@ import android.widget.Toast;
 
 import java.text.DecimalFormat;
 
-public class GeoQuizActivity extends AppCompatActivity {
+public class QuizActivity extends AppCompatActivity {
 
-    private static final String TAG = "GeoQuizActivity";
+    private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
+    private static final String KEY_IS_CHEATER = "is_cheater";
+    private static final int REQUEST_CODE_CHEAT = 0;
 
     private Button mTrueButton;
     private Button mFalseButton;
+    private Button mCheatButton;
     private ImageButton mPrevButton;
     private ImageButton mNextButton;
     private TextView mQuestionTextView;
@@ -34,6 +37,7 @@ public class GeoQuizActivity extends AppCompatActivity {
     };
 
     private int mCurrentIndex = 0;
+    private boolean mIsCheater;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,14 +59,11 @@ public class GeoQuizActivity extends AppCompatActivity {
         mTrueButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                Toast toast = Toast.makeText(GeoQuizActivity.this, R.string.correct_toast, Toast.LENGTH_SHORT);
+//                Toast toast = Toast.makeText(QuizActivity.this, R.string.correct_toast, Toast.LENGTH_SHORT);
 //                toast.setGravity(Gravity.CENTER, 0, 0);
 //                toast.show();
-                if (mQuestionBank[mCurrentIndex].isAnswered()) {
-                    Toast.makeText(GeoQuizActivity.this, "This question is answered!", Toast.LENGTH_SHORT).show();
-                } else {
+
                     checkAnswer(true);
-                }
 
             }
         });
@@ -80,8 +81,6 @@ public class GeoQuizActivity extends AppCompatActivity {
 //                toast.setGravity(Gravity.CENTER, 0, 0);
 //                toast.setDuration(Toast.LENGTH_LONG);
 //                toast.show();
-
-
                 checkAnswer(false);
 
             }
@@ -96,7 +95,6 @@ public class GeoQuizActivity extends AppCompatActivity {
                 } else {
                     mCurrentIndex = mQuestionBank.length - 1;
                 }
-
                 updateQuestion();
             }
         });
@@ -110,9 +108,24 @@ public class GeoQuizActivity extends AppCompatActivity {
             }
         });
 
+        mCheatButton = (Button) findViewById(R.id.check_button);
+        mCheatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //start cheat Activity
+//                Intent intent = new Intent(QuizActivity.this,CheatActivity.class);
+                boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
+                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue);
+                //startActivity(intent);
+                startActivityForResult(intent, REQUEST_CODE_CHEAT);
+            }
+        });
+
+
         if (savedInstanceState != null) {
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX);
             mQuestionTextView.setText(mQuestionBank[mCurrentIndex].getTextResId());
+            mIsCheater = savedInstanceState.getBoolean(KEY_IS_CHEATER);
         }
 
         updateQuestion();
@@ -153,14 +166,16 @@ public class GeoQuizActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
         Log.i(TAG, "onSaveInstanceState: ");
         outState.putInt(KEY_INDEX, mCurrentIndex);
+        outState.putBoolean(KEY_IS_CHEATER,mIsCheater);
     }
 
     private void updateQuestion() {
         try {
             int question = mQuestionBank[mCurrentIndex].getTextResId();
+            mIsCheater = mQuestionBank[mCurrentIndex].isCheated();
             mQuestionTextView.setText(question);
             if (mQuestionBank[mCurrentIndex].isAnswered()) {
-                //Toast.makeText(GeoQuizActivity.this, "You can just answer this question once!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(QuizActivity.this, "You can just answer this question once!", Toast.LENGTH_SHORT).show();
                 mTrueButton.setEnabled(false);
                 mFalseButton.setEnabled(false);
             } else {
@@ -177,15 +192,23 @@ public class GeoQuizActivity extends AppCompatActivity {
         boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
 
         int messageResId = 0;
-        if (userPressedTrue == answerIsTrue) {
-            messageResId = R.string.correct_toast;
+
+        if (mIsCheater) {
+            messageResId = R.string.judgment_toast;
         } else {
-            messageResId = R.string.incorrect_toast;
+            if (mQuestionBank[mCurrentIndex].isAnswered()) {
+                Toast.makeText(QuizActivity.this, "This question is answered!", Toast.LENGTH_SHORT).show();
+            } else {
+                if (userPressedTrue == answerIsTrue) {
+                    messageResId = R.string.correct_toast;
+                } else {
+                    messageResId = R.string.incorrect_toast;
+                }
+            }
         }
         Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
-
         mQuestionBank[mCurrentIndex].setAnswered(true);
-
+        mQuestionBank[mCurrentIndex].setCheated(mIsCheater);
         updateQuestion();
         checkisAllAnswered();
 
@@ -200,15 +223,29 @@ public class GeoQuizActivity extends AppCompatActivity {
         for (Question q : mQuestionBank) {
             if (!q.isAnswered()) {
                 isAllAnswered = false;
-            }else{
-                if(q.isAnswerTrue()){
-                    correctCount+=1;
+            } else {
+                if (q.isAnswerTrue()) {
+                    correctCount += 1;
                 }
             }
         }
         if (isAllAnswered) {
-            String msg = "共计"+mQuestionBank.length+"题，答对"+String.valueOf(correctCount)+"题，答题正确率为"+ new DecimalFormat("#.00").format((correctCount*1.00/mQuestionBank.length)*100)+"%";
+            String msg = "共计" + mQuestionBank.length + "题，答对" + String.valueOf(correctCount) + "题，答题正确率为" + new DecimalFormat("#.00").format((correctCount * 1.00 / mQuestionBank.length) * 100) + "%";
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+
+        if (requestCode == REQUEST_CODE_CHEAT) {
+            if (data == null) {
+                return;
+            }
+            mIsCheater = CheatActivity.wasAnswerShown(data);
         }
     }
 

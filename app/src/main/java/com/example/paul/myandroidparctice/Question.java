@@ -5,6 +5,7 @@ public class Question {
     private int mTextResId;
     private boolean mAnswerTrue;
     private boolean mIsAnswered;
+    private boolean mIsCheated;
 
 
     public Question(int textResId, boolean answerTrue) {
@@ -34,5 +35,13 @@ public class Question {
 
     public void setAnswered(boolean answered) {
         mIsAnswered = answered;
+    }
+
+    public boolean isCheated() {
+        return mIsCheated;
+    }
+
+    public void setCheated(boolean cheated) {
+        mIsCheated = cheated;
     }
 }
