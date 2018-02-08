@@ -38,6 +38,7 @@ public class QuizActivity extends AppCompatActivity {
 
     private int mCurrentIndex = 0;
     private boolean mIsCheater;
+    private int mCheatCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,7 +116,7 @@ public class QuizActivity extends AppCompatActivity {
                 //start cheat Activity
 //                Intent intent = new Intent(QuizActivity.this,CheatActivity.class);
                 boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
-                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue);
+                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue,mCheatCount);
                 //startActivity(intent);
                 startActivityForResult(intent, REQUEST_CODE_CHEAT);
             }
@@ -246,6 +247,9 @@ public class QuizActivity extends AppCompatActivity {
                 return;
             }
             mIsCheater = CheatActivity.wasAnswerShown(data);
+            if(mIsCheater == true){
+                mCheatCount +=1;
+            }
         }
     }
 
