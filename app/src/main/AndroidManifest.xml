@@ -18,12 +18,9 @@
             <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
             <!-- </intent-filter> -->
         </activity>
-        <activity android:name=".QuizActivity">
-        </activity>
-        <activity android:name=".CheatActivity">
-        </activity>
-        <activity android:name=".CrimeActivity">
-        </activity>
+        <activity android:name=".QuizActivity"></activity>
+        <activity android:name=".CheatActivity"></activity>
+        <activity android:name=".CrimeActivity"></activity>
         <activity android:name=".CrimeListActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -31,6 +28,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".CrimePagerActivity"></activity>
     </application>
 
 </manifest>
