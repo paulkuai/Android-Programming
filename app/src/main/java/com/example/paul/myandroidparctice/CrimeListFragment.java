@@ -1,6 +1,8 @@
 package com.example.paul.myandroidparctice;
 
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -26,6 +28,8 @@ import butterknife.ButterKnife;
 import butterknife.Unbinder;
 
 public class CrimeListFragment extends Fragment {
+
+    private static final int REQUEST_CRIME = 1;
     @BindView(R.id.crime_recycler_view)
     RecyclerView mCrimeRecyclerView;
     private CrimeAdapter mCrimeAdapter;
@@ -43,18 +47,41 @@ public class CrimeListFragment extends Fragment {
         return v;
     }
 
-    private void updateUI() {
-        CrimeLab crimeLab = CrimeLab.get(getActivity());
-        List<Crime> crimes = crimeLab.getCrimes();
-
-        mCrimeAdapter = new CrimeAdapter(crimes);
-        mCrimeRecyclerView.setAdapter(mCrimeAdapter);
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUI();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         unbinder.unbind();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+        if (requestCode == REQUEST_CRIME) {
+            if (data != null) {
+                mCrimeAdapter.notifyItemChanged(data.getIntExtra("position",0));
+            }
+        }
+    }
+
+    private void updateUI() {
+        CrimeLab crimeLab = CrimeLab.get(getActivity());
+        List<Crime> crimes = crimeLab.getCrimes();
+
+        if (mCrimeAdapter == null) {
+            mCrimeAdapter = new CrimeAdapter(crimes);
+            mCrimeRecyclerView.setAdapter(mCrimeAdapter);
+        } else {
+            mCrimeAdapter.notifyDataSetChanged();
+        }
+
     }
 
     public class CrimeHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -70,7 +97,11 @@ public class CrimeListFragment extends Fragment {
 
         @Override
         public void onClick(View view) {
-            Toast.makeText(getActivity(), mCrime.getTitle() + " clicked!", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(getActivity(), mCrime.getTitle() + " clicked!", Toast.LENGTH_SHORT).show();
+            //Intent intent = new Intent(getActivity(),CrimeActivity.class);
+            Intent intent = CrimeActivity.newIntent(getActivity(), mCrime.getId(), mCrimeRecyclerView.getChildAdapterPosition(itemView));
+
+            startActivityForResult(intent, REQUEST_CRIME);
         }
 
         public CrimeHolder(View view) {
@@ -86,7 +117,7 @@ public class CrimeListFragment extends Fragment {
         private void bind(Crime crime) {
             mCrime = crime;
             mCrimeTitle.setText(mCrime.getTitle());
-            mCrimeDate.setText(DateFormat.format("EEEE,MMM dd,yyyy",mCrime.getDate()));
+            mCrimeDate.setText(DateFormat.format("EEEE,MMM dd,yyyy", mCrime.getDate()));
             mSolvedImageView.setVisibility(crime.isSolved() ? View.VISIBLE : View.GONE);
         }
 
@@ -120,7 +151,7 @@ public class CrimeListFragment extends Fragment {
         private void bind(Crime crime) {
             mCrime = crime;
             mCrimeTitle.setText(mCrime.getTitle());
-            mCrimeDate.setText(DateFormat.format("EEEE,MMM dd,yyyy",mCrime.getDate()));
+            mCrimeDate.setText(DateFormat.format("EEEE,MMM dd,yyyy", mCrime.getDate()));
             mBtnCallPolice.setOnClickListener(this);
         }
 
@@ -138,11 +169,12 @@ public class CrimeListFragment extends Fragment {
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             LayoutInflater inflater = LayoutInflater.from(getActivity());
-            if (viewType == 1) {
-                return new CrimeHolder(inflater.inflate(R.layout.list_item_crime, parent, false));
-            } else {
-                return new CrimePoliceHolder(inflater.inflate(R.layout.list_item_crime_police, parent, false));
-            }
+            return new CrimeHolder(inflater.inflate(R.layout.list_item_crime, parent, false));
+//            if (viewType == 1) {
+//                return new CrimeHolder(inflater.inflate(R.layout.list_item_crime, parent, false));
+//            } else {
+//                return new CrimePoliceHolder(inflater.inflate(R.layout.list_item_crime_police, parent, false));
+//            }
         }
 
         @Override
