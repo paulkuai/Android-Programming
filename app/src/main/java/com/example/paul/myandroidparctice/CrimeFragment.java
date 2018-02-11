@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -17,6 +18,7 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.MediaController;
 
+import java.util.Date;
 import java.util.UUID;
 
 import butterknife.BindView;
@@ -26,6 +28,9 @@ import butterknife.Unbinder;
 public class CrimeFragment extends Fragment {
     private static final String ARG_CRIME_ID = "crime_id";
     private static final String ARG_POSITION = "position";
+    private static final String DIALOG_DATE = "DialogDate";
+
+    private static final int REQUEST_DATE = 0;
 
     @BindView(R.id.crime_title)
     EditText mTitleField;
@@ -82,8 +87,21 @@ public class CrimeFragment extends Fragment {
                 //This one too
             }
         });
-        mDateButton.setText(mCrime.getDate().toString());
-        mDateButton.setEnabled(false);
+        updateDate();
+        //mDateButton.setEnabled(false);
+        mDateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                FragmentManager manager = getFragmentManager();
+//                DatePickerFragment dialog = new DatePickerFragment();
+//                DatePickerFragment dialog = DatePickerFragment
+//                        .newInstance(mCrime.getDate());
+//                dialog.setTargetFragment(CrimeFragment.this,REQUEST_DATE);
+//                dialog.show(manager,DIALOG_DATE);
+                Intent intent = DatePickerActivity.newIntent(getActivity(),mCrime.getDate());
+                startActivityForResult(intent,REQUEST_DATE);
+            }
+        });
         mSolvedCheckBox.setChecked(mCrime.isSolved());
         mSolvedCheckBox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
             @Override
@@ -106,6 +124,22 @@ public class CrimeFragment extends Fragment {
         data.putExtra(ARG_CRIME_ID,mCrime.getId());
         data.putExtra(ARG_POSITION,mPosition);
         getActivity().setResult(Activity.RESULT_OK,data);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(resultCode != Activity.RESULT_OK){
+            return;
+        }
+        if(requestCode == REQUEST_DATE){
+            Date date = (Date)data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+            mCrime.setDate(date);
+            updateDate();
+        }
+    }
+
+    private void updateDate() {
+        mDateButton.setText(mCrime.getDate().toString());
     }
 
     @Override
