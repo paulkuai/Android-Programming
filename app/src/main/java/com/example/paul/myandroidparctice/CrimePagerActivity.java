@@ -55,8 +55,8 @@ public class CrimePagerActivity extends AppCompatActivity {
 
         UUID crimeId = (UUID) getIntent()
                 .getSerializableExtra(EXTRA_CRIME_ID);
-        //int position = (int) getIntent()
-         //       .getSerializableExtra(EXTRA_POSITION);
+        int position = (int) getIntent()
+                .getSerializableExtra(EXTRA_POSITION);
 
         mCrimes = CrimeLab.get(this).getCrimes();
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -73,7 +73,7 @@ public class CrimePagerActivity extends AppCompatActivity {
             }
         });
 
-        //mViewPager.setCurrentItem(position);
+        mViewPager.setCurrentItem(position);
         mBtnJumpToFirst.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
