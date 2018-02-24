@@ -109,11 +109,6 @@ public class DatePickerFragment extends DialogFragment{
                 getActivity().finish();
             }
         });
-
-
-
-
-
         return view;
     }
 }

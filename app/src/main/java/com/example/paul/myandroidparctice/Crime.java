@@ -71,4 +71,9 @@ public class Crime {
     public void setRequiresPolice(int requiresPolice) {
         mRequiresPolice = requiresPolice;
     }
+
+    public String getPhotoFileName(){
+        return "IMG_"+getId().toString()+".jpg";
+    }
+
 }
