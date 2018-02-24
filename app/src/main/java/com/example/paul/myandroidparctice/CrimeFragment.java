@@ -1,13 +1,20 @@
 package com.example.paul.myandroidparctice;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.ShareCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,13 +26,13 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
-import android.widget.MediaController;
 
 import java.util.Date;
 import java.util.UUID;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import butterknife.Unbinder;
 
 public class CrimeFragment extends Fragment {
@@ -34,6 +41,11 @@ public class CrimeFragment extends Fragment {
     private static final String DIALOG_DATE = "DialogDate";
 
     private static final int REQUEST_DATE = 0;
+    private static final int REQUEST_CONTACT = 1;
+    private static final int REQUEST_DIAL = 2;
+
+    final Intent pickContact = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+    Intent dial;
 
     @BindView(R.id.crime_title)
     EditText mTitleField;
@@ -42,8 +54,17 @@ public class CrimeFragment extends Fragment {
     @BindView(R.id.crime_solved)
     CheckBox mSolvedCheckBox;
     Unbinder unbinder;
+    @BindView(R.id.crime_suspect)
+    Button mCrimeSuspect;
+    @BindView(R.id.crime_report)
+    Button mCrimeReport;
+    @BindView(R.id.crime_dial)
+    Button mCrimeDial;
     private Crime mCrime;
     private int mPosition;
+
+    private int contactId;
+    private String phoneNumber;
 
 
     public static CrimeFragment newInstance(UUID crimeId, int position) {
@@ -114,6 +135,13 @@ public class CrimeFragment extends Fragment {
                 returnResult();
             }
         });
+
+        if (mCrime.getSuspect() != null) {
+            mCrimeSuspect.setText(mCrime.getSuspect());
+        }
+
+        ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.READ_CONTACTS},
+                1);
         return v;
     }
 
@@ -126,7 +154,7 @@ public class CrimeFragment extends Fragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.fragment_crime,menu);
+        inflater.inflate(R.menu.fragment_crime, menu);
     }
 
     @Override
@@ -157,6 +185,29 @@ public class CrimeFragment extends Fragment {
             Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
             mCrime.setDate(date);
             updateDate();
+        } else if (requestCode == REQUEST_CONTACT && data != null) {
+            Uri contactUri = data.getData();
+            String[] queryFields = new String[]{
+                    ContactsContract.Contacts.DISPLAY_NAME,
+                    ContactsContract.Contacts._ID
+            };
+            Cursor c = getActivity().getContentResolver()
+                    .query(contactUri, queryFields, null, null, null);
+
+            try {
+                if (c.getCount() == 0) {
+                    return;
+                }
+
+                c.moveToFirst();
+                String suspect = c.getString(0);
+                mCrime.setSuspect(suspect);
+                mCrimeSuspect.setText(suspect);
+                contactId = c.getInt(1);
+
+            } finally {
+                c.close();
+            }
         }
     }
 
@@ -171,4 +222,71 @@ public class CrimeFragment extends Fragment {
         CrimeLab.get(getActivity())
                 .updateCrime(mCrime);
     }
+
+    private String getCrimeReport() {
+        String solvedString = null;
+        if (mCrime.isSolved()) {
+            solvedString = getString(R.string.crime_report_solved);
+        } else {
+            solvedString = getString(R.string.crime_report_unsolved);
+        }
+
+        String dateFormat = "EEE, MMM dd";
+        String dateString = DateFormat.format(dateFormat, mCrime.getDate()).toString();
+
+        String suspect = mCrime.getSuspect();
+        if (suspect == null) {
+            suspect = getString(R.string.crime_report_no_suspect);
+        } else {
+            suspect = getString(R.string.crime_report_suspect, suspect);
+        }
+
+        String report = getString(R.string.crime_report, mCrime.getTitle(), dateString, solvedString, suspect);
+
+        return report;
+    }
+
+    @OnClick({R.id.crime_suspect, R.id.crime_report,R.id.crime_dial})
+    public void onViewClicked(View view) {
+        switch (view.getId()) {
+            case R.id.crime_suspect:
+                startActivityForResult(pickContact, REQUEST_CONTACT);
+                break;
+            case R.id.crime_report:
+//                Intent i = new Intent(Intent.ACTION_SEND);
+//                i.setType("text/plain");
+//                i.putExtra(Intent.EXTRA_TEXT,getCrimeReport());
+//                i.putExtra(Intent.EXTRA_SUBJECT,getString(R.string.crime_report_subject));
+//                i = Intent.createChooser(i,getString(R.string.send_report));
+//                startActivity(i);
+                ShareCompat.IntentBuilder builder = ShareCompat.IntentBuilder.from(getActivity());
+                builder.setType("text/plain");
+                builder.setText(getCrimeReport());
+                builder.setSubject(getString(R.string.crime_report_subject));
+                builder.setChooserTitle(R.string.send_report);
+                builder.startChooser();
+                break;
+            case R.id.crime_dial:
+                Cursor c = getActivity().getContentResolver()
+                        .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER},  ContactsContract.CommonDataKinds.Phone.CONTACT_ID +" = "+ contactId, null, null);
+
+                try {
+                    if (c.getCount() == 0) {
+                        return;
+                    }
+
+                    c.moveToFirst();
+                    phoneNumber = c.getString(0);
+
+                } finally {
+                    c.close();
+                }
+                dial = new Intent(Intent.ACTION_DIAL,Uri.parse("tel:"+ phoneNumber));
+                startActivity(dial);
+                break;
+            default:
+                break;
+        }
+    }
+
 }
