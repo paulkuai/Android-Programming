@@ -17,7 +17,7 @@ import java.util.UUID;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class CrimePagerActivity extends AppCompatActivity {
+public class CrimePagerActivity extends AppCompatActivity implements CrimeFragment.Callbacks {
 
     private static final String EXTRA_CRIME_ID = "crime_id";
     private static final String EXTRA_POSITION = "position";
@@ -31,7 +31,12 @@ public class CrimePagerActivity extends AppCompatActivity {
 
     private List<Crime> mCrimes;
 
-    public static Intent newIntext(Context packageContext, UUID crimeId, int position) {
+    @Override
+    public void onCrimeUpdated(Crime crime) {
+
+    }
+
+    public static Intent newInstance(Context packageContext, UUID crimeId, int position) {
         Intent intent = new Intent(packageContext, CrimePagerActivity.class);
         intent.putExtra(EXTRA_CRIME_ID, crimeId);
         intent.putExtra(EXTRA_POSITION, position);
@@ -39,7 +44,7 @@ public class CrimePagerActivity extends AppCompatActivity {
 
     }
 
-    public static Intent newIntext(Context packageContext, UUID crimeId) {
+    public static Intent newInstance(Context packageContext, UUID crimeId) {
         Intent intent = new Intent(packageContext, CrimePagerActivity.class);
         intent.putExtra(EXTRA_CRIME_ID, crimeId);
         return intent;
